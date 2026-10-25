@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Solar System Explorer · v8 look-dev</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font: 13px/1.3 -apple-system, system-ui, sans-serif; color: #fff; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  #hud { position: fixed; right: calc(8px + env(safe-area-inset-right)); top: calc(8px + env(safe-area-inset-top)); background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.35); padding: 5px 6px; border-radius: 8px; font: 12px/1.2 ui-monospace, Menlo, monospace; text-align: right; z-index: 5; }
+  #fps { font-weight: 700; margin-bottom: 4px; }
+  #hud button { background: #111; color: #fff; border: 1px solid rgba(255,255,255,.5); border-radius: 5px; padding: 5px 8px; margin-left: 3px; font: 12px ui-monospace, Menlo, monospace; }
+  #hud button.on { border-color: #4ade80; color: #4ade80; }
+  #stick { position: fixed; width: 110px; height: 110px; border-radius: 50%; border: 2px solid rgba(255,255,255,.45); background: rgba(0,0,0,.25); display: none; pointer-events: none; z-index: 4; }
+  #knob { position: absolute; left: 33px; top: 33px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.75); }
+  #hint { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: rgba(0,0,0,.72); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 13px; white-space: nowrap; transition: opacity 1s; pointer-events: none; z-index: 5; }
+  #hint.fade { opacity: 0; }
+  body.shot #stick, body.shot #hint { display: none; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; background: #0b0705; color: #e8c9a8; font-size: 15px; transition: opacity .5s; }
+  body.shot #hud { display: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/build/three.module.min.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<div id="loading">Loading Mars…</div>
+<div id="hud"></div>
+<div id="stick"><div id="knob"></div></div>
+<div id="hint"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
