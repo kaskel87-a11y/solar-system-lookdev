@@ -4,9 +4,9 @@ This is a standalone visual prototype (a Mars colony street) for the v8 "realist
 
 **Play:** https://kaskel87-a11y.github.io/solar-system-lookdev/
 
-- **Phone:** left thumb is a walk stick, right thumb drags to look, double-tap on the right side toggles run. Touch devices start on the `low` tier.
+- **Phone:** left thumb is a walk stick, right thumb drags to look, double-tap on the right side toggles run. Phones and tablets start on `med` and drop to `low` on their own if the frame rate stays under ~28 fps for 4 s.
 - **Laptop:** WASD or the arrow keys walk, Shift runs, drag the mouse to look. Laptops start on `high`.
-- **Top-right corner:** live FPS (green ≥30, yellow ≥20, red below that) and a low/med/high tier switcher.
+- **Top-right corner:** live FPS (green ≥30, yellow ≥20, red below that) and a low/med/high tier switcher. A tier you tap is remembered on that device (phone and laptop choices are kept apart); the small grey line shows why the current tier was picked.
 - **URL flags:** `?tier=low|med|high`, `?bench=1&dur=10` (puts results in `window.__bench`), `?auto` (scripted walk), `?nopost`, `?noshadow`.
 
 Static Three.js r169 build, no build step. All assets are CC0 or MIT; see [LICENSES.md](LICENSES.md).

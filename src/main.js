@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { pickTier } from './quality.js';
+import { pickTier, saveTier, downgrade, LOWER } from './quality.js';
 import { createHeight, buildTerrainGeo, terrainMaterial, macroTexture } from './terrain.js';
 import { createPost } from './post.js';
 import { createSky, loadEnv } from './sky.js';
@@ -271,8 +271,8 @@ async function main() {
 
   // ---------- HUD ----------
   const hud = document.getElementById('hud');
-  if (hud) hud.innerHTML = `<div id="fps">… fps</div><div class="tiers">${['low', 'med', 'high'].map((n) => `<button class="${n === tier.name ? 'on' : ''}" data-t="${n}">${n}</button>`).join('')}</div>`;
-  hud?.querySelectorAll('button[data-t]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const u = new URL(location.href); u.searchParams.set('tier', b.dataset.t); location.href = u.toString(); }));
+  if (hud) hud.innerHTML = `<div id="fps">… fps</div><div id="why" style="font-size:10px;opacity:.7;margin-bottom:3px">${tier.name} · ${tier.reason}</div><div class="tiers">${['low', 'med', 'high'].map((n) => `<button class="${n === tier.name ? 'on' : ''}" data-t="${n}">${n}</button>`).join('')}</div>`;
+  hud?.querySelectorAll('button[data-t]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const u = new URL(location.href); saveTier(b.dataset.t); u.searchParams.delete('tier'); location.href = u.toString(); }));
   const hint = document.getElementById('hint'); if (hint) { hint.textContent = TOUCH ? 'Left thumb: walk · right thumb: look · double-tap right: run' : 'WASD walk · Shift run · drag mouse to look'; setTimeout(() => hint.classList.add('fade'), 6000); }
   const fpsEl = document.getElementById('fps');
 
@@ -307,7 +307,7 @@ async function main() {
   if (!AUTO) setClip('Idle');
 
   // ---------- loop ----------
-  const clock = new THREE.Clock(); let t = Number(Q.get('t') ?? 0), frames = 0, acc = 0, fpsShown = 0;
+  const clock = new THREE.Clock(); let t = Number(Q.get('t') ?? 0), frames = 0, acc = 0, fpsShown = 0, slowFor = 0, wall0 = 0, wallLast = 0;
   const camOff = new THREE.Vector3(); const look = new THREE.Vector3();
   const pathLen = 52; // player walks z = -2 .. -54 down the strip, then loops
   const camPos = new THREE.Vector3();
@@ -351,7 +351,10 @@ async function main() {
     renderer.info.reset();
     if (Q.has('nopost')) renderer.render(scene, camera); else { post.update(t); post.composer.render(dt); }
     frames++; acc += dt;
-    if (!SHOT && acc > 0.5) { fpsShown = frames / acc; frames = 0; acc = 0; if (fpsEl) { fpsEl.textContent = `${fpsShown.toFixed(0)} fps · ${tier.name}`; fpsEl.style.color = fpsShown >= 30 ? '#4ade80' : fpsShown >= 20 ? '#facc15' : '#f87171'; } }
+    const now = performance.now(); if (!wall0) { wall0 = now; wallLast = now; }
+    if (!SHOT && now - wallLast > 500) { const span = (now - wallLast) / 1000; fpsShown = frames / span; frames = 0; acc = 0; wallLast = now;
+      // dynamic fallback (auto tiers only): under 28 fps for ~4 s (wall clock) after a 6 s warm-up -> drop one tier
+      if (tier.auto && !BENCH && LOWER[tier.name] && now - wall0 > 6000 && !document.hidden) { slowFor = fpsShown < 28 && span < 2 ? slowFor + span : 0; if (slowFor >= 4) { slowFor = -1e9; downgrade(LOWER[tier.name]); } } if (fpsEl) { fpsEl.textContent = `${fpsShown.toFixed(0)} fps · ${tier.name}`; fpsEl.style.color = fpsShown >= 30 ? '#4ade80' : fpsShown >= 20 ? '#facc15' : '#f87171'; } }
     window.__frameCount = (window.__frameCount || 0) + 1;
     if (!SHOT) requestAnimationFrame(frame);
   }

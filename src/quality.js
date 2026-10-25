@@ -21,11 +21,32 @@ export const TIERS = {
     dust: 1600, pointLights: 6, envRes: '2k', rocks: 110, props: 1,
   },
 };
+// Device class: anything phone/tablet-like is 'mobile' (-> low). Chrome iOS = CriOS, Firefox iOS = FxiOS, Edge iOS = EdgiOS;
+// iPadOS (and iOS "Request Desktop Site") report a Macintosh UA but have multi-touch.
+export function deviceClass() {
+  const ua = navigator.userAgent || '', tp = navigator.maxTouchPoints || 0;
+  const mm = (q) => { try { return matchMedia(q).matches; } catch { return false; } };
+  const small = Math.min(screen.width, screen.height) <= 900;
+  if (/iPhone|iPad|iPod|CriOS|FxiOS|EdgiOS|Android|Mobile/i.test(ua)) return { cls: 'mobile', why: 'mobile UA' };
+  if (/Macintosh/i.test(ua) && tp > 1) return { cls: 'mobile', why: 'iPadOS/iOS desktop-mode UA + touch' };
+  if (mm('(pointer: coarse)') && !mm('(any-pointer: fine)')) return { cls: 'mobile', why: 'coarse pointer' };
+  if ((tp > 0 || 'ontouchstart' in window) && small) return { cls: 'mobile', why: 'touch + small screen' };
+  return { cls: 'desktop', why: 'desktop' };
+}
+const KEY = 'ssx-lookdev-tier', DKEY = 'ssx-lookdev-downgrade';
+export const LOWER = { high: 'med', med: 'low' };
+/** auto tiers only: remember a lower tier for this browser session and reload */
+export function downgrade(name) { try { sessionStorage.setItem(DKEY, name); } catch {} location.reload(); }
+// Manual choices are remembered per device class, and only when the user tapped a tier button,
+// so a 'high' picked on a laptop (or a stale value) never wins on a phone.
+export function saveTier(name) { try { sessionStorage.removeItem(DKEY); localStorage.setItem(KEY, JSON.stringify({ tier: name, cls: deviceClass().cls, picked: true })); } catch {} }
 export function pickTier() {
+  const dc = deviceClass();
   const q = new URLSearchParams(location.search).get('tier');
-  if (q && TIERS[q]) return TIERS[q];
-  // touch-first devices (phones, tablets) -> low; laptops/desktops with a mouse -> high
-  const coarse = matchMedia('(pointer: coarse)').matches;
-  const mobile = /iPhone|iPad|iPod|Android|CriOS/i.test(navigator.userAgent) || (coarse && navigator.maxTouchPoints > 0);
-  return mobile ? TIERS.low : TIERS.high;
+  if (q && TIERS[q]) return { ...TIERS[q], reason: 'url' };
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && s.picked && s.cls === dc.cls && TIERS[s.tier]) return { ...TIERS[s.tier], reason: 'saved' }; } catch {}
+  // Real iPhone (Chrome iOS) data, Oct 25 2026: high 16 fps, med 60 (vsync cap), low 60 -> phones start on med.
+  try { const d = sessionStorage.getItem(DKEY); if (d && TIERS[d]) return { ...TIERS[d], reason: 'auto-downgraded (fps)', auto: true }; } catch {}
+  return { ...(dc.cls === 'mobile' ? TIERS.med : TIERS.high), reason: 'auto: ' + dc.why, auto: true };
 }
